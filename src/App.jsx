@@ -344,6 +344,87 @@ const styles = `
     color: var(--muted);
     margin-top: 0.15rem;
   }
+
+  /* NUEVOS ESTILOS PARA LA FASE 2 */
+  .company-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .company-logo {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    object-fit: contain;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  }
+
+  .btn-save {
+    background: var(--navy);
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 1rem;
+    transition: background 0.2s;
+    width: 100%;
+    font-size: 0.9rem;
+  }
+  
+  .btn-save:hover { background: var(--navy2); }
+
+  .watchlist {
+    margin-top: 3rem;
+  }
+  
+  .watchlist-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    color: var(--navy);
+    margin-bottom: 1rem;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 0.5rem;
+  }
+
+  .watch-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.8rem;
+    transition: transform 0.2s;
+  }
+  
+  .watch-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(13,34,87,0.08); }
+  
+  .watch-info { display: flex; align-items: center; gap: 1rem; }
+  .watch-ticker { font-weight: 800; color: var(--navy); font-size: 1.1rem; }
+  .watch-name { color: var(--muted); font-size: 0.8rem; }
+  
+  .watch-numbers { text-align: right; }
+  .watch-val { font-weight: 700; color: var(--safe); font-size: 1.1rem; }
+  .watch-price { color: var(--muted); font-size: 0.8rem; }
+  
+  .btn-delete {
+    background: var(--danger-bg);
+    color: var(--danger);
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: bold;
+    margin-left: 1rem;
+  }
 `;
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
@@ -415,7 +496,6 @@ function DCFChart({ projections }) {
     const xScale = (i) => pad.left + (i / (n - 1 || 1)) * chartW;
     const yScale = (v) => pad.top + chartH - (v / maxVal) * chartH;
 
-    // Grid
     ctx.strokeStyle = "#dce2ee";
     ctx.lineWidth = 1;
     for (let i = 0; i <= 4; i++) {
@@ -423,7 +503,6 @@ function DCFChart({ projections }) {
       ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + chartW, y); ctx.stroke();
     }
 
-    // FCF Bars
     const barW = Math.min(chartW / n * 0.45, 32);
     projections.forEach((d, i) => {
       const x = xScale(i);
@@ -438,7 +517,6 @@ function DCFChart({ projections }) {
       ctx.fill();
     });
 
-    // PV line
     ctx.beginPath();
     ctx.strokeStyle = "#0d2257";
     ctx.lineWidth = 2.5;
@@ -449,7 +527,6 @@ function DCFChart({ projections }) {
     });
     ctx.stroke();
 
-    // Dots
     projections.forEach((d, i) => {
       const x = xScale(i), y = yScale(d.pvFCF);
       ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2);
@@ -458,7 +535,6 @@ function DCFChart({ projections }) {
       ctx.fillStyle = "#fff"; ctx.fill();
     });
 
-    // X labels
     ctx.fillStyle = "#7a8ab0";
     ctx.font = "500 11px Inter, sans-serif";
     ctx.textAlign = "center";
@@ -467,7 +543,6 @@ function DCFChart({ projections }) {
         ctx.fillText(`Y${d.year}`, xScale(i), H - 10);
     });
 
-    // Y labels
     ctx.textAlign = "right";
     for (let i = 0; i <= 4; i++) {
       const v = (maxVal / 4) * (4 - i);
@@ -482,6 +557,11 @@ function DCFChart({ projections }) {
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 
 export default function App() {
+  // Estados para la Fase 2
+  const [ticker, setTicker] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [savedValuations, setSavedValuations] = useState([]);
+
   const [fcf, setFcf] = useState("");
   const [growthRate, setGrowthRate] = useState("10");
   const [terminalGrowth, setTerminalGrowth] = useState("3");
@@ -500,6 +580,19 @@ export default function App() {
   const [wGraham, setWGraham] = useState(25);
   const [wPE, setWPE] = useState(20);
   const [wEV, setWEV] = useState(20);
+
+  // Cargar datos guardados al iniciar
+  useEffect(() => {
+    const saved = localStorage.getItem("valuationsData");
+    if (saved) {
+      setSavedValuations(JSON.parse(saved));
+    }
+  }, []);
+
+  // Guardar datos en localStorage cuando cambie la lista
+  useEffect(() => {
+    localStorage.setItem("valuationsData", JSON.stringify(savedValuations));
+  }, [savedValuations]);
 
   const dcfResult = calcDCF({
     fcf: p(fcf), growthRate: p(growthRate), terminalGrowth: p(terminalGrowth),
@@ -528,6 +621,35 @@ export default function App() {
   const barColor = marginPct > 25 ? "#1a7a4a" : marginPct > 0 ? "#c9a84c" : "#c0392b";
   const barWidth = marginPct !== null ? Math.min(Math.max(marginPct, 0), 100) : 0;
 
+  // Función para guardar valoración
+  const handleSaveValuation = () => {
+    if (!ticker) return alert("Por favor, ingresa el Ticker de la empresa (Ej. AAPL) en la parte superior.");
+    if (!hasResult) return alert("Debes completar al menos un método de valoración.");
+
+    const newItem = {
+      id: Date.now(),
+      ticker: ticker.toUpperCase(),
+      companyName: companyName || ticker.toUpperCase(),
+      intrinsic: intrinsic,
+      price: cp,
+      margin: marginPct
+    };
+
+    setSavedValuations([newItem, ...savedValuations]);
+    alert("¡Valoración de " + newItem.ticker + " guardada exitosamente!");
+  };
+
+  // Función para borrar valoración
+  const handleDeleteValuation = (id) => {
+    const filtered = savedValuations.filter(item => item.id !== id);
+    setSavedValuations(filtered);
+  };
+
+  // URL del logo autogenerado
+  const logoUrl = ticker 
+    ? \`https://ui-avatars.com/api/?name=\${ticker}&background=0D2257&color=fff&font-size=0.4&rounded=true&bold=true\` 
+    : \`https://ui-avatars.com/api/?name=?&background=eef1f6&color=7a8ab0&rounded=true\`;
+
   return (
     <>
       <style>{styles}</style>
@@ -540,6 +662,33 @@ export default function App() {
           </div>
           <span className="header-badge">Uso Profesional</span>
         </header>
+
+        {/* BUSCADOR DE EMPRESA FASE 2 */}
+        <div className="card card-full" style={{ marginBottom: "1.5rem" }}>
+          <div className="company-header">
+            <img src={logoUrl} alt="Logo Empresa" className="company-logo" />
+            <div style={{ flex: 1, display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+              <div className="field" style={{ flex: 1, minWidth: "150px", margin: 0 }}>
+                <label>Símbolo / Ticker (Ej. AAPL)</label>
+                <input 
+                  value={ticker} 
+                  onChange={e => setTicker(e.target.value)} 
+                  placeholder="AAPL" 
+                  maxLength={6}
+                  style={{ textTransform: "uppercase", fontWeight: "bold" }}
+                />
+              </div>
+              <div className="field" style={{ flex: 2, minWidth: "200px", margin: 0 }}>
+                <label>Nombre de la Empresa</label>
+                <input 
+                  value={companyName} 
+                  onChange={e => setCompanyName(e.target.value)} 
+                  placeholder="Apple Inc." 
+                />
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* METRICS SUMMARY */}
         {hasResult && (
@@ -574,17 +723,17 @@ export default function App() {
             <div className="method-tag">Método 01</div>
             <div className="card-title">Flujo de Caja Descontado (DCF)</div>
             <div className="field"><label>Flujo de Caja Libre — FCF (millones $)</label>
-              <input value={fcf} onChange={e => setFcf(e.target.value)} placeholder="ej. 5000" /></div>
+              <input value={fcf} onChange={e => setFcf(e.target.value)} placeholder="ej. 5000" type="number" /></div>
             <div className="field"><label>Tasa de crecimiento anual (%)</label>
-              <input value={growthRate} onChange={e => setGrowthRate(e.target.value)} placeholder="ej. 10" /></div>
+              <input value={growthRate} onChange={e => setGrowthRate(e.target.value)} placeholder="ej. 10" type="number" /></div>
             <div className="field"><label>Crecimiento terminal / perpetuo (%)</label>
-              <input value={terminalGrowth} onChange={e => setTerminalGrowth(e.target.value)} placeholder="ej. 3" /></div>
+              <input value={terminalGrowth} onChange={e => setTerminalGrowth(e.target.value)} placeholder="ej. 3" type="number" /></div>
             <div className="field"><label>Tasa de descuento / WACC (%)</label>
-              <input value={discountRate} onChange={e => setDiscountRate(e.target.value)} placeholder="ej. 10" /></div>
+              <input value={discountRate} onChange={e => setDiscountRate(e.target.value)} placeholder="ej. 10" type="number" /></div>
             <div className="field"><label>Años de proyección</label>
-              <input value={years} onChange={e => setYears(e.target.value)} placeholder="ej. 10" /></div>
+              <input value={years} onChange={e => setYears(e.target.value)} placeholder="ej. 10" type="number" /></div>
             <div className="field"><label>Acciones en circulación (millones)</label>
-              <input value={shares} onChange={e => setShares(e.target.value)} placeholder="ej. 1000" /></div>
+              <input value={shares} onChange={e => setShares(e.target.value)} placeholder="ej. 1000" type="number" /></div>
           </div>
 
           {/* METHOD 2 + 3 */}
@@ -594,9 +743,9 @@ export default function App() {
               <div className="method-tag">Método 02</div>
               <div className="card-title">Graham Number</div>
               <div className="field"><label>EPS — Ganancias por acción ($)</label>
-                <input value={eps} onChange={e => setEps(e.target.value)} placeholder="ej. 6.50" /></div>
+                <input value={eps} onChange={e => setEps(e.target.value)} placeholder="ej. 6.50" type="number" /></div>
               <div className="field"><label>Valor en libros por acción (Book Value $)</label>
-                <input value={bookValue} onChange={e => setBookValue(e.target.value)} placeholder="ej. 20.00" /></div>
+                <input value={bookValue} onChange={e => setBookValue(e.target.value)} placeholder="ej. 20.00" type="number" /></div>
               <div style={{ fontSize: "0.7rem", color: "var(--muted)", marginTop: "0.3rem" }}>
                 Fórmula: √(22.5 × EPS × Book Value)
               </div>
@@ -609,7 +758,7 @@ export default function App() {
               <div className="field"><label>EPS — (compartido con Graham)</label>
                 <input value={eps} readOnly /></div>
               <div className="field"><label>P/E objetivo o histórico del sector</label>
-                <input value={peTarget} onChange={e => setPeTarget(e.target.value)} placeholder="ej. 15" /></div>
+                <input value={peTarget} onChange={e => setPeTarget(e.target.value)} placeholder="ej. 15" type="number" /></div>
               <div style={{ fontSize: "0.7rem", color: "var(--muted)", marginTop: "0.3rem" }}>
                 Fórmula: EPS × P/E objetivo
               </div>
@@ -622,13 +771,13 @@ export default function App() {
             <div className="method-tag">Método 04</div>
             <div className="card-title">EV / EBITDA</div>
             <div className="field"><label>EBITDA (millones $)</label>
-              <input value={ebitda} onChange={e => setEbitda(e.target.value)} placeholder="ej. 8000" /></div>
+              <input value={ebitda} onChange={e => setEbitda(e.target.value)} placeholder="ej. 8000" type="number" /></div>
             <div className="field"><label>Múltiplo EV/EBITDA del sector</label>
-              <input value={evMultiple} onChange={e => setEvMultiple(e.target.value)} placeholder="ej. 10" /></div>
+              <input value={evMultiple} onChange={e => setEvMultiple(e.target.value)} placeholder="ej. 10" type="number" /></div>
             <div className="field"><label>Deuda total (millones $)</label>
-              <input value={debt} onChange={e => setDebt(e.target.value)} placeholder="ej. 2000" /></div>
+              <input value={debt} onChange={e => setDebt(e.target.value)} placeholder="ej. 2000" type="number" /></div>
             <div className="field"><label>Efectivo y equivalentes (millones $)</label>
-              <input value={cash} onChange={e => setCash(e.target.value)} placeholder="ej. 1500" /></div>
+              <input value={cash} onChange={e => setCash(e.target.value)} placeholder="ej. 1500" type="number" /></div>
             <div className="field"><label>Acciones en circulación (compartido)</label>
               <input value={shares} readOnly /></div>
           </div>
@@ -639,7 +788,7 @@ export default function App() {
             <div className="method-tag">Comparación de Mercado</div>
             <div className="card-title">Precio Actual & Ponderación</div>
             <div className="field"><label>Precio actual de mercado por acción ($)</label>
-              <input value={currentPrice} onChange={e => setCurrentPrice(e.target.value)} placeholder="ej. 150.00" /></div>
+              <input value={currentPrice} onChange={e => setCurrentPrice(e.target.value)} placeholder="ej. 150.00" type="number" /></div>
             <hr className="divider" />
             <div style={{ fontSize: "0.72rem", fontWeight: 600, color: "var(--muted)", marginBottom: "0.7rem", letterSpacing: "0.08em", textTransform: "uppercase" }}>
               Peso de cada método en el resultado final
@@ -676,28 +825,34 @@ export default function App() {
             </div>
 
             {hasResult ? (
-              <div className="verdict-row">
-                <div>
-                  <div className="verdict-label-sm">Valor Intrínseco Ponderado</div>
-                  <div className="verdict-price">{fmt(intrinsic)}</div>
-                </div>
-                <div className="verdict-meta">
-                  <div className={`verdict-tag ${verdict.cls}`}>
-                    <span>{verdict.icon}</span>{verdict.label}
+              <>
+                <div className="verdict-row">
+                  <div>
+                    <div className="verdict-label-sm">Valor Intrínseco Ponderado</div>
+                    <div className="verdict-price">{fmt(intrinsic)}</div>
                   </div>
-                  {cp > 0 && (
-                    <div style={{ marginTop: "0.5rem" }}>
-                      <div className="margin-bar">
-                        <div className="margin-bar-fill" style={{ width: `${barWidth}%`, background: barColor }} />
-                      </div>
-                      <div className="margin-bar-labels">
-                        <span>Margen de seguridad: <b style={{ color: barColor }}>{pct(marginPct)}</b></span>
-                        <span>Precio mercado: <b>{fmt(cp)}</b></span>
-                      </div>
+                  <div className="verdict-meta">
+                    <div className={`verdict-tag ${verdict.cls}`}>
+                      <span>{verdict.icon}</span>{verdict.label}
                     </div>
-                  )}
+                    {cp > 0 && (
+                      <div style={{ marginTop: "0.5rem" }}>
+                        <div className="margin-bar">
+                          <div className="margin-bar-fill" style={{ width: `${barWidth}%`, background: barColor }} />
+                        </div>
+                        <div className="margin-bar-labels">
+                          <span>Margen de seguridad: <b style={{ color: barColor }}>{pct(marginPct)}</b></span>
+                          <span>Precio mercado: <b>{fmt(cp)}</b></span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+                {/* BOTÓN DE GUARDAR FASE 2 */}
+                <button className="btn-save" onClick={handleSaveValuation}>
+                  + Guardar Valoración de {ticker || "Empresa"} en Watchlist
+                </button>
+              </>
             ) : (
               <div className="empty-state">
                 <div style={{ fontSize: "2rem", marginBottom: "0.5rem", opacity: 0.3 }}>◈</div>
@@ -706,50 +861,41 @@ export default function App() {
             )}
           </div>
 
-          {/* DCF CHART */}
-          {dcfResult.projections && dcfResult.projections.length > 0 && (
-            <div className="card card-full">
-              <div className="card-accent" style={{ background: "var(--navy)" }} />
-              <div className="method-tag">Análisis Visual — DCF</div>
-              <div className="card-title">Proyección de Flujos de Caja</div>
-              <div className="chart-legend">
-                <div className="legend-item">
-                  <div className="legend-dot" style={{ background: "#c9a84c" }} />
-                  FCF Proyectado (nominal)
-                </div>
-                <div className="legend-item">
-                  <div className="legend-dot" style={{ background: "#0d2257" }} />
-                  Valor Presente del FCF
-                </div>
-                {dcfResult.pvTV && (
-                  <div className="legend-item" style={{ marginLeft: "auto" }}>
-                    Valor Terminal (PV): <b style={{ color: "var(--navy)", marginLeft: "0.3rem" }}>
-                      ${(dcfResult.pvTV * p(shares)).toFixed(0)}M
-                    </b>
-                  </div>
-                )}
-              </div>
-              <div className="chart-wrap">
-                <DCFChart projections={dcfResult.projections} />
-              </div>
-              <div style={{ display: "flex", gap: "2.5rem", marginTop: "1rem", flexWrap: "wrap" }}>
-                <div>
-                  <span style={{ fontSize: "0.7rem", color: "var(--muted)" }}>PV Flujos operativos: </span>
-                  <b style={{ color: "var(--navy)", fontSize: "0.88rem" }}>${(dcfResult.totalPV * p(shares)).toFixed(0)}M</b>
-                </div>
-                <div>
-                  <span style={{ fontSize: "0.7rem", color: "var(--muted)" }}>PV Valor Terminal: </span>
-                  <b style={{ color: "var(--gold)", fontSize: "0.88rem" }}>${(dcfResult.pvTV * p(shares)).toFixed(0)}M</b>
-                </div>
-                <div>
-                  <span style={{ fontSize: "0.7rem", color: "var(--muted)" }}>Valor intrínseco DCF: </span>
-                  <b style={{ color: "var(--navy)", fontSize: "0.88rem" }}>{fmt(dcfVal)}</b>
-                </div>
-              </div>
-            </div>
-          )}
-
         </div>
+
+        {/* WATCHLIST / VALORACIONES GUARDADAS FASE 2 */}
+        {savedValuations.length > 0 && (
+          <div className="watchlist">
+            <h2 className="watchlist-title">Tus Valoraciones Guardadas (Watchlist)</h2>
+            <div className="watchlist-grid">
+              {savedValuations.map((item) => (
+                <div className="watch-card" key={item.id}>
+                  <div className="watch-info">
+                    <img 
+                      src={`https://ui-avatars.com/api/?name=${item.ticker}&background=0D2257&color=fff&rounded=true&bold=true`} 
+                      alt="logo" 
+                      style={{ width: "45px", height: "45px", borderRadius: "50%" }} 
+                    />
+                    <div>
+                      <div className="watch-ticker">{item.ticker}</div>
+                      <div className="watch-name">{item.companyName}</div>
+                    </div>
+                  </div>
+                  <div className="watch-numbers">
+                    <div className="watch-val">Valor: {fmt(item.intrinsic)}</div>
+                    <div className="watch-price">
+                      Precio de mercado: {fmt(item.price)} 
+                      <span style={{ color: item.margin > 0 ? "var(--safe)" : "var(--danger)", marginLeft: "0.5rem", fontWeight: "bold" }}>
+                        ({pct(item.margin)})
+                      </span>
+                    </div>
+                  </div>
+                  <button className="btn-delete" onClick={() => handleDeleteValuation(item.id)}>Eliminar</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <p className="footnote">
           Esta herramienta es exclusivamente informativa. Los resultados dependen de los supuestos ingresados.<br />
