@@ -647,8 +647,8 @@ export default function App() {
 
   // URL del logo autogenerado
   const logoUrl = ticker 
-    ? \`https://ui-avatars.com/api/?name=\${ticker}&background=0D2257&color=fff&font-size=0.4&rounded=true&bold=true\` 
-    : \`https://ui-avatars.com/api/?name=?&background=eef1f6&color=7a8ab0&rounded=true\`;
+    ? `https://ui-avatars.com/api/?name=${ticker}&background=0D2257&color=fff&font-size=0.4&rounded=true&bold=true` 
+    : `https://ui-avatars.com/api/?name=?&background=eef1f6&color=7a8ab0&rounded=true`;
 
   return (
     <>
